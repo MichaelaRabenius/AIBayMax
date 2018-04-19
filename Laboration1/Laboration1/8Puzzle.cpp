@@ -89,7 +89,10 @@ void Heuristic(Node & n) {
 	}
 	n._h = counter;
 
-	//
+	//h2
+
+
+
 }
 
 void Compute_Cost(Node & n) {
