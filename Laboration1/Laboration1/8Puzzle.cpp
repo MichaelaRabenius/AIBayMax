@@ -21,9 +21,9 @@ struct Node
 {
 	//The current state of the puzzle board.
 	int _state[3][3]{
-		{ 4, 0, 3 },
-		{ 8, 1, 5 },
-		{ 6, 2, 7 }
+		{ 6, 4, 7 },
+		{ 8, 5, 0 },
+		{ 3, 2, 1 }
 	};
 
 
@@ -36,7 +36,6 @@ struct Node
 	//Each movement is added as a letter to the string
 	string _movement = "";
 
-	Node * parent = nullptr;
 
 	bool operator==(Node& const n2) {
 		return _state == n2._state;
@@ -72,12 +71,24 @@ bool Is_Goal(Node const & n) {
 	return true;
 }
 
+//finds the index in the goal state
+pair<int, int> Find_Index(int val) {
+	for (int i = 0; i < 3; i++) {
+		for (int j = 0; j < 3; j++) {
+			if (goal[i][j] == val){
+				return pair<int, int>(i, j);
+			}
+				
+		}
+	}
+}
+
 //Calculate heuristic for one node. The heuristic is the sum of all tiles different
 //from the goal board.
 void Heuristic(Node & n) {
 
 	//h1
-	int counter = 0;
+	/*int counter = 0;
 
 	for (int i = 0; i < 3; i++) {
 		for (int j = 0; j < 3; j++) {
@@ -87,9 +98,20 @@ void Heuristic(Node & n) {
 			}
 		}
 	}
-	n._h = counter;
-
+	n._h = counter;*/
 	//h2
+	int dist = 0;
+	for (int i = 0; i < 3; i++) {
+		for (int j = 0; j < 3; j++) {
+			pair<int, int> goal_index = Find_Index(n._state[i][j]);
+			
+			int distX = abs(i - goal_index.first);
+			int distY = abs(j - goal_index.second);
+			dist = dist + distX + distY;	
+		}
+	}
+	n._h = dist;
+	
 
 
 
@@ -120,7 +142,6 @@ vector<Node> Gen_Successors(Node & n) {
 	//Move up
 	if (row > 0) {
 		Node child = n;
-		child.parent = &n;
 		std::swap(child._state[row][col], child._state[row - 1][col]);
 		child._movement += "U";
 		++child._g;
@@ -131,7 +152,6 @@ vector<Node> Gen_Successors(Node & n) {
 	//Move down
 	if (row < 2) {
 		Node child = n;
-		child.parent = &n;
 		std::swap(child._state[row][col], child._state[row + 1][col]);
 		child._movement += "D";
 		++child._g;
@@ -142,7 +162,6 @@ vector<Node> Gen_Successors(Node & n) {
 	//Move to the left
 	if (col > 0) {
 		Node child = n;
-		child.parent = &n;
 		std::swap(child._state[row][col], child._state[row][col - 1]);
 		child._movement += "L";
 		++child._g;
@@ -153,7 +172,6 @@ vector<Node> Gen_Successors(Node & n) {
 	//Move to the right
 	if (col < 2) {
 		Node child = n;
-		child.parent = &n;
 		std::swap(child._state[row][col], child._state[row][col + 1]);
 		child._movement += "R";
 		++child._g;
@@ -181,7 +199,7 @@ string A_Star(Node start) {
 		closed_list.emplace(first.makeKey()); //the node has been visited
 		
 		if (Is_Goal(first)) {
-			return "Solution found: " + first._movement;
+			return first._movement;
 		}
 		else {
 			//Generate children for the node;
@@ -215,20 +233,9 @@ int main() {
 
 	vector<Node> c = Gen_Successors(start);
 
-	/*for (auto s : c) {
-		Compute_Cost(s);
-		cout << "Cost " << s._cost << endl;
-		open_list.push(s);
-	}
-	open_list.pop();
-	for (auto s : c) {
-		Node d = open_list.top();
-		open_list.pop();
-		cout << "Cost " << d._cost << endl;
-	}*/
-
 	string res = A_Star(start);
-	cout << res << endl;
+	cout << "Solution found. Number of steps: " << res.size()  << endl;
+	cout << "Moves: " << res << endl;
 	cout << "Puzzle complete.";
 
 	int n;
