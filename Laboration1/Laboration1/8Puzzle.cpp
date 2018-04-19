@@ -18,8 +18,8 @@ struct Node
 	//The current state of the puzzle board.
 	int _state[3][3]{
 		{ 1, 2, 3 },
-	{ 0, 5, 4 },
-	{ 7, 8, 6 }
+		{ 4, 5, 6 },
+		{ 7, 0, 8 }
 	};
 
 	//Heuristics and cost
@@ -31,6 +31,11 @@ struct Node
 	//Each movement is added as a letter to the string
 	string _movement = "";
 
+	Node * parent = nullptr;
+
+	bool operator==(Node& const n2) {
+		return _state == n2._state;
+	}
 
 };
 
@@ -42,8 +47,8 @@ struct Compare_Cost {
 
 //Checks if a nodes state matches the goal state.
 bool Is_Goal(Node const & n) {
-	for (int i = 0; i < 3; ++i) {
-		for (int j = 0; j < 3; ++j) {
+	for (int i = 0; i < 3; i++) {
+		for (int j = 0; j < 3; j++) {
 			if (n._state[i][j] != goal[i][j])
 				return false;
 		}
@@ -56,8 +61,8 @@ bool Is_Goal(Node const & n) {
 void Heuristic(Node & n) {
 	int counter = 0;
 
-	for (int i = 0; i < 3; ++i) {
-		for (int j = 0; j < 3; ++j) {
+	for (int i = 0; i < 3; i++) {
+		for (int j = 0; j < 3; j++) {
 
 			if (n._state[i][j] != goal[i][j]) {
 				++counter;
@@ -93,6 +98,7 @@ vector<Node> Gen_Successors(Node & n) {
 	//Move up
 	if (row > 0) {
 		Node child = n;
+		child.parent = &n;
 		std::swap(child._state[row][col], child._state[row - 1][col]);
 		child._movement += "U";
 		++child._g;
@@ -103,6 +109,7 @@ vector<Node> Gen_Successors(Node & n) {
 	//Move down
 	if (row < 2) {
 		Node child = n;
+		child.parent = &n;
 		std::swap(child._state[row][col], child._state[row + 1][col]);
 		child._movement += "D";
 		++child._g;
@@ -113,6 +120,7 @@ vector<Node> Gen_Successors(Node & n) {
 	//Move to the left
 	if (col > 0) {
 		Node child = n;
+		child.parent = &n;
 		std::swap(child._state[row][col], child._state[row][col - 1]);
 		child._movement += "L";
 		++child._g;
@@ -123,6 +131,7 @@ vector<Node> Gen_Successors(Node & n) {
 	//Move to the right
 	if (col < 2) {
 		Node child = n;
+		child.parent = &n;
 		std::swap(child._state[row][col], child._state[row][col + 1]);
 		child._movement += "R";
 		++child._g;
@@ -139,14 +148,17 @@ string A_Star(Node start) {
 	priority_queue<Node, vector<Node>, Compare_Cost> open_list;
 	open_list.push(start);
 
+	//cout << "path: " << open_list.top()._movement;
 	//Instantiate the closed list
-	//priority_queue<Node, vector<Node>, Compare_Cost> closed_list;
+	deque<Node> closed_list;
+	closed_list.push_back(open_list.top());
 
 	while (!open_list.empty()) {
 		//Retrieve the first node in the queue
 		Node first = open_list.top();
 		open_list.pop();
-
+		closed_list.push_back(first); //the node has been visited
+		
 		if (Is_Goal(first)) {
 			return "Solution found: " + first._movement;
 		}
@@ -155,10 +167,14 @@ string A_Star(Node start) {
 			vector<Node> children = Gen_Successors(first);
 
 			for (auto c : children) {
-				Heuristic(c);
-				Compute_Cost(c);
-				open_list.push(c);
-
+				if (closed_list.front() == c) {
+					continue;
+				}
+				else {
+					Heuristic(c);
+					Compute_Cost(c);
+					open_list.push(c);
+				}
 			}
 		}
 	}
@@ -169,11 +185,13 @@ string A_Star(Node start) {
 
 
 
-//int main() {
-//	Node start;
-//	string res = A_Star(start);
-//	cout << res;
-//	
-//	int n;
-//	cin >> n;
-//}
+int main() {
+	cout << "Starting puzzle" << endl;
+	Node start;
+	string res = A_Star(start);
+	cout << res << endl;
+	cout << "Puzzle complete.";
+
+	int n;
+	cin >> n;
+}
