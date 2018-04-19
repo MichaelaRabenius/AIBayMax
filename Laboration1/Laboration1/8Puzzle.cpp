@@ -3,7 +3,11 @@
 #include <string>
 #include <queue>
 #include <vector>
+#include <algorithm>
+#include <set>
 using namespace std;
+
+using State = int[3][3];
 
 //The goal state. Global to ease access for now.
 const int goal[3][3]{
@@ -17,15 +21,16 @@ struct Node
 {
 	//The current state of the puzzle board.
 	int _state[3][3]{
-		{ 1, 2, 3 },
-		{ 4, 5, 6 },
-		{ 7, 0, 8 }
+		{ 4, 0, 3 },
+		{ 8, 1, 5 },
+		{ 6, 2, 7 }
 	};
 
+
 	//Heuristics and cost
-	float _g; //Cost from all earlier moves
-	float _h; // the heuristic for the current node
-	float _cost; //The total cost of moving -> _g + _h;
+	int _g = 0; //Cost from all earlier moves
+	int _h = 0; // the heuristic for the current node
+	int _cost = 0; //The total cost of moving -> _g + _h;
 
 	//String containing the movemennts uptil the current node
 	//Each movement is added as a letter to the string
@@ -37,11 +42,22 @@ struct Node
 		return _state == n2._state;
 	}
 
+	string makeKey() {
+		string res = "";
+		for (int i = 0; i < 3; i++) {
+			for (int j = 0; j < 3; j++) {
+				res += to_string(_state[i][j]);
+			}
+		}
+		//cout << res << endl;
+		return res;
+	}
+
 };
 
 struct Compare_Cost {
 	bool operator()(Node const & n1, Node const & n2) {
-		return n1._cost < n2._cost;
+		return n1._cost > n2._cost;
 	}
 };
 
@@ -59,6 +75,8 @@ bool Is_Goal(Node const & n) {
 //Calculate heuristic for one node. The heuristic is the sum of all tiles different
 //from the goal board.
 void Heuristic(Node & n) {
+
+	//h1
 	int counter = 0;
 
 	for (int i = 0; i < 3; i++) {
@@ -69,8 +87,9 @@ void Heuristic(Node & n) {
 			}
 		}
 	}
-
 	n._h = counter;
+
+	//
 }
 
 void Compute_Cost(Node & n) {
@@ -147,17 +166,16 @@ string A_Star(Node start) {
 	//Instantiate the open list
 	priority_queue<Node, vector<Node>, Compare_Cost> open_list;
 	open_list.push(start);
-
-	//cout << "path: " << open_list.top()._movement;
+	
 	//Instantiate the closed list
-	deque<Node> closed_list;
-	closed_list.push_back(open_list.top());
+	set<string> closed_list;
+	//closed_list.emplace(open_list.top()._state);
 
 	while (!open_list.empty()) {
 		//Retrieve the first node in the queue
 		Node first = open_list.top();
 		open_list.pop();
-		closed_list.push_back(first); //the node has been visited
+		closed_list.emplace(first.makeKey()); //the node has been visited
 		
 		if (Is_Goal(first)) {
 			return "Solution found: " + first._movement;
@@ -165,17 +183,16 @@ string A_Star(Node start) {
 		else {
 			//Generate children for the node;
 			vector<Node> children = Gen_Successors(first);
-
-			for (auto c : children) {
-				if (closed_list.front() == c) {
+			//cout << "-------------" << endl;
+			for (auto s : children) {
+				if (closed_list.find(s.makeKey()) != closed_list.end()) {
 					continue;
 				}
-				else {
-					Heuristic(c);
-					Compute_Cost(c);
-					open_list.push(c);
-				}
+				Compute_Cost(s);
+				open_list.push(s);
 			}
+
+			
 		}
 	}
 
@@ -188,6 +205,25 @@ string A_Star(Node start) {
 int main() {
 	cout << "Starting puzzle" << endl;
 	Node start;
+
+
+	priority_queue<Node, vector<Node>, Compare_Cost> open_list;
+	open_list.push(start);
+
+	vector<Node> c = Gen_Successors(start);
+
+	/*for (auto s : c) {
+		Compute_Cost(s);
+		cout << "Cost " << s._cost << endl;
+		open_list.push(s);
+	}
+	open_list.pop();
+	for (auto s : c) {
+		Node d = open_list.top();
+		open_list.pop();
+		cout << "Cost " << d._cost << endl;
+	}*/
+
 	string res = A_Star(start);
 	cout << res << endl;
 	cout << "Puzzle complete.";
