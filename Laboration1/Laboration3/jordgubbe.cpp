@@ -23,12 +23,10 @@ struct Clause {
 		}
 	};
 	
-	void AddPositive(string s) {
-		p.emplace(s);
-	}
-
-	void AddNegative(string s) {
-		n.emplace(s);
+	
+	bool operator<(const Clause &s) const
+	{
+		return (p < s.p);
 	}
 
 	set<string> p;
@@ -83,6 +81,83 @@ Clause Resolution(Clause A, Clause B) {
 
 }
 
+
+
+
+bool Subsumes(Clause A, Clause B) {
+	bool b1 = includes(B.p.begin(), B.p.end(), A.p.begin(), A.p.end());
+	bool b2 = includes(B.n.begin(), B.n.end(), A.n.begin(), A.n.end());
+	if (b1 && b2) {
+		return true;
+	}
+	else {
+		return false;
+	}
+
+}
+
+
+
+set<Clause> Incoperate_Clause(Clause A, set<Clause> KB) {
+
+	for (Clause B : KB) {
+		if (Subsumes(B, A)) { //Note order, may be wrong
+			return KB;
+		}
+	}
+
+	for (Clause B : KB) {
+		set<string> temp1, temp2;
+		set_difference(begin(A.p), end(A.p), begin(B.p), end(B.p), inserter(temp1, temp1.end()));
+		set_difference(begin(A.n), end(A.n), begin(B.n), end(B.n), inserter(temp2, temp2.end()));
+
+		if (Subsumes(A, B) && (!temp1.empty() || !temp2.empty())) {
+			set<Clause> Btemp, KBtemp;
+			Btemp.emplace(B);
+			set_difference(begin(KB), end(KB), begin(Btemp), end(Btemp), inserter(KBtemp, KBtemp.end()));
+			KB = KBtemp;
+		}
+	}
+
+	set<Clause> Atemp{ A }, KBtemp;
+	set_union(begin(KB), end(KB), begin(Atemp), end(Atemp), inserter(KBtemp, KBtemp.end()));
+	KB = KBtemp;
+	return KB;
+}
+
+set<Clause> Incoperate(set<Clause> S, set<Clause> KB) {
+
+	for (Clause A : S) {
+		KB = Incoperate_Clause(A, KB);
+	}
+	return KB;
+}
+
+//Solve the knowledge base
+set<Clause> Solver(set<Clause> KB) {
+	set<Clause> _KB = KB;
+	do {
+		set<Clause> S;
+		set<Clause>::iterator iter;
+		for (iter = KB.begin(); iter != KB.end(); ++iter) {
+			Clause A = *iter;
+			Clause B = *(++iter);
+			Clause C = Resolution(A, B);
+
+			if (!(C.n.empty() && C.p.empty())) {
+				set<Clause> temp{ C }, temp2;
+				set_union(S.begin(), S.end(), temp.begin(), temp.end(), inserter(temp2, temp2.begin()));
+				S = temp2;
+			}
+		}
+
+		if ((S.empty())) {
+			return KB;
+		}
+		//Incoperate
+
+	} while (_KB != KB);
+}
 
 
 int main(){
