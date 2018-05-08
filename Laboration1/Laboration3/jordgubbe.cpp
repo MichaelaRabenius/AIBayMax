@@ -5,7 +5,6 @@
 #include <algorithm>
 using namespace std;
 
-
 struct Clause {
 	//, i.e &&, ||
 	Clause() = default;
@@ -29,9 +28,28 @@ struct Clause {
 		return (p < s.p);
 	}
 
+	bool operator==(const Clause &s) const
+	{
+		return (p == s.p && n == s.n);
+	}
+
+	friend ostream& operator<<(ostream& out, const Clause& c);
+
 	set<string> p;
 	set<string> n;
+
 };
+
+ostream& operator<<(ostream& out, Clause& c) {
+	out << "================================" << endl;
+	out << "Clause:" << endl << "positives: ";
+	copy(c.p.begin(), c.p.end(), ostream_iterator<string>(out, " "));
+	cout << endl << "negatives: ";
+	copy(c.n.begin(), c.n.end(), ostream_iterator<string>(out, " "));
+	out << endl << "================================" << endl;
+	return out;
+}
+
 
 //find the resolution of two clauses
 Clause Resolution(Clause A, Clause B) {
@@ -81,9 +99,6 @@ Clause Resolution(Clause A, Clause B) {
 
 }
 
-
-
-
 bool Subsumes(Clause A, Clause B) {
 	bool b1 = includes(B.p.begin(), B.p.end(), A.p.begin(), A.p.end());
 	bool b2 = includes(B.n.begin(), B.n.end(), A.n.begin(), A.n.end());
@@ -95,8 +110,6 @@ bool Subsumes(Clause A, Clause B) {
 	}
 
 }
-
-
 
 set<Clause> Incoperate_Clause(Clause A, set<Clause> KB) {
 
@@ -139,9 +152,10 @@ set<Clause> Solver(set<Clause> KB) {
 	do {
 		set<Clause> S;
 		set<Clause>::iterator iter;
-		for (iter = KB.begin(); iter != KB.end(); ++iter) {
+		for (iter = KB.begin(); iter != KB.end(); iter++) {
 			Clause A = *iter;
-			Clause B = *(++iter);
+			iter++;
+			Clause B = *iter;
 			Clause C = Resolution(A, B);
 
 			if (!(C.n.empty() && C.p.empty())) {
@@ -155,20 +169,37 @@ set<Clause> Solver(set<Clause> KB) {
 			return KB;
 		}
 		//Incoperate
+		KB = Incoperate(S, KB);
 
-	} while (_KB != KB);
+	} while (KB != _KB);
 }
 
 
 int main(){
-	set<string> a{ "a", "b", "c", "d"}; //sparas i p
-	set<string> b{ "b", "e"}; // sparas i n
-	set<string> c; // sparas i n
+	set<string> a{ "a", "b", "d"}; 
+	set<string> b{ "b", "d"}; 
+	set<string> c{ "c", "d", "e"};
+	set<string> d{ "a", "d", "e" };
 
-	Clause A(a, b); // a & b & -c & -d
+	Clause A(a, b);
+	Clause B(c, b); 
+	Clause C(b, c);
+	Clause D(d, a);
 
-	Clause B(c, b); // a & b & -c
-	cout << "Testing A: " << endl;
+	set<Clause> KB{ A, B, C, D };
+
+	set<Clause> res = Solver(KB);
+
+	if (res.empty())
+		cout << "Empty" << endl;
+	else {
+		
+		for (auto s : res) {
+			cout << s << endl;
+		}
+	}
+
+	/*cout << "Testing A: " << endl;
 	//set_intersection(a.begin(), a.end(), b.begin(), b.end(), inserter(c, c.begin())); //A.p inters B.n
 	cout << "A positives: ";
 	copy(A.p.begin(), A.p.end(), ostream_iterator<string>(cout, " "));
@@ -185,7 +216,7 @@ int main(){
 		cout << endl << "C negatives: ";
 		copy(C.n.begin(), C.n.end(), ostream_iterator<string>(cout, " "));
 	}
-
+	*/
 	
 	cin.get();
 }
